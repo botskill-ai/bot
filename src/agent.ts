@@ -69,19 +69,19 @@ export class AdvancedClaudeAgent {
     }
   ): AsyncGenerator<Anthropic.MessageStreamEvent, void, unknown> {
     try {
-      const stream = await this.client.messages.stream({
-        model: options?.model || 'claude-3-5-sonnet-20241022',
-        max_tokens: options?.maxTokens || 1024,
-        temperature: options?.temperature,
-        system: this.systemPrompt,
-        tools: options?.tools,
-        messages: [
-          ...this.conversationHistory,
-          {
-            role: 'user',
-            content: message,
-          },
-        ],
+      const stream = this.client.messages.stream({
+          model: options?.model || 'claude-3-5-sonnet-20241022',
+          max_tokens: options?.maxTokens || 1024,
+          temperature: options?.temperature,
+          system: this.systemPrompt,
+          tools: options?.tools,
+          messages: [
+              ...this.conversationHistory,
+              {
+                  role: 'user',
+                  content: message,
+              },
+          ],
       });
 
       for await (const event of stream) {
