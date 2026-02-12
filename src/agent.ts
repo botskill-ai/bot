@@ -1,131 +1,136 @@
-import Anthropic from '@anthropic-ai/sdk';
+import {
+  ProviderRegistry,
+  OpenAIProvider,
+  AnthropicProvider,
+} from './providers/index.js';
+import { Conversation } from './conversation.js';
+import { SendOptions } from './types.js';
 
 /**
- * 高级 Agent 类 - 支持工具调用和复杂对话
+ * Agent - 统一的 AI 对话代理
+ * 封装提供商切换、对话管理、消息发送等功能
  */
-export class AdvancedClaudeAgent {
-  private client: Anthropic;
+export class Agent {
+  private registry: ProviderRegistry;
+  private conversation: Conversation;
   private systemPrompt: string;
-  private conversationHistory: Anthropic.MessageParam[];
 
-  constructor(apiKey: string, systemPrompt?: string) {
-    this.client = new Anthropic({ apiKey });
-    this.systemPrompt = systemPrompt || '你是一个有用的 AI 助手。';
-    this.conversationHistory = [];
+  constructor(registry: ProviderRegistry, options?: { systemPrompt?: string; maxHistory?: number }) {
+    this.registry = registry;
+    this.conversation = new Conversation(options?.maxHistory);
+    this.systemPrompt = options?.systemPrompt || '你是一个有用的 AI 助手。请用中文回答问题。';
   }
 
-  /**
-   * 发送消息
-   */
-  async sendMessage(
-    message: string,
-    options?: {
-      model?: string;
-      maxTokens?: number;
-      temperature?: number;
-      tools?: Anthropic.Tool[];
+  /** 发送消息（非流式） */
+  async chat(message: string, options?: SendOptions): Promise<string> {
+    const provider = this.registry.getCurrent();
+    if (!provider) {
+      throw new Error('没有可用的提供商，请检查 API Key 配置');
     }
-  ): Promise<Anthropic.Message> {
+
+    this.conversation.addUserMessage(message);
+
     try {
-      const response = await this.client.messages.create({
-        model: options?.model || 'claude-3-5-sonnet-20241022',
-        max_tokens: options?.maxTokens || 1024,
-        temperature: options?.temperature,
-        system: this.systemPrompt,
-        tools: options?.tools,
-        messages: [
-          ...this.conversationHistory,
-          {
-            role: 'user',
-            content: message,
-          },
-        ],
-      });
-
-      // 更新对话历史
-      this.conversationHistory.push({ role: 'user', content: message });
-      this.conversationHistory.push({
-        role: 'assistant',
-        content: response.content,
-      });
-
+      const response = await provider.sendMessage(
+        this.conversation.getMessages(),
+        this.systemPrompt,
+        options
+      );
+      this.conversation.addAssistantMessage(response);
       return response;
     } catch (error) {
-      console.error('发送消息时出错:', error);
+      // 发送失败时移除刚添加的用户消息
+      this.conversation.clear();
       throw error;
     }
   }
 
-  /**
-   * 流式发送消息
-   */
-  async *streamMessage(
+  /** 流式发送消息 */
+  async *chatStream(
     message: string,
-    options?: {
-      model?: string;
-      maxTokens?: number;
-      temperature?: number;
-      tools?: Anthropic.Tool[];
+    options?: SendOptions
+  ): AsyncGenerator<string, void, unknown> {
+    const provider = this.registry.getCurrent();
+    if (!provider) {
+      throw new Error('没有可用的提供商，请检查 API Key 配置');
     }
-  ): AsyncGenerator<Anthropic.MessageStreamEvent, void, unknown> {
+
+    this.conversation.addUserMessage(message);
+    let fullResponse = '';
+
     try {
-      const stream = this.client.messages.stream({
-          model: options?.model || 'claude-3-5-sonnet-20241022',
-          max_tokens: options?.maxTokens || 1024,
-          temperature: options?.temperature,
-          system: this.systemPrompt,
-          tools: options?.tools,
-          messages: [
-              ...this.conversationHistory,
-              {
-                  role: 'user',
-                  content: message,
-              },
-          ],
-      });
-
-      for await (const event of stream) {
-        yield event;
+      for await (const chunk of provider.streamMessage(
+        this.conversation.getMessages(),
+        this.systemPrompt,
+        options
+      )) {
+        fullResponse += chunk;
+        yield chunk;
       }
-
-      // 更新对话历史
-      const finalMessage = await stream.finalMessage();
-      this.conversationHistory.push({ role: 'user', content: message });
-      this.conversationHistory.push({
-        role: 'assistant',
-        content: finalMessage.content,
-      });
+      this.conversation.addAssistantMessage(fullResponse);
     } catch (error) {
-      console.error('流式发送消息时出错:', error);
+      // 如果已经收到部分响应，仍然保存
+      if (fullResponse) {
+        this.conversation.addAssistantMessage(fullResponse);
+      }
       throw error;
     }
   }
 
-  /**
-   * 清除对话历史
-   */
+  /** 清除对话历史 */
   clearHistory(): void {
-    this.conversationHistory = [];
+    this.conversation.clear();
   }
 
-  /**
-   * 获取对话历史
-   */
-  getHistory(): Anthropic.MessageParam[] {
-    return [...this.conversationHistory];
+  /** 获取对话历史长度 */
+  getHistoryLength(): number {
+    return this.conversation.getLength();
   }
 
-  /**
-   * 设置系统提示词
-   */
+  /** 获取对话历史 */
+  getHistory() {
+    return this.conversation.getMessages();
+  }
+
+  /** 获取系统提示词 */
+  getSystemPrompt(): string {
+    return this.systemPrompt;
+  }
+
+  /** 设置系统提示词 */
   setSystemPrompt(prompt: string): void {
     this.systemPrompt = prompt;
   }
 
-  /**
-   * 获取系统提示词
-   */
-  getSystemPrompt(): string {
-    return this.systemPrompt;
+  /** 获取提供商注册表 */
+  getRegistry(): ProviderRegistry {
+    return this.registry;
+  }
+
+  /** 切换提供商 */
+  switchProvider(id: string): boolean {
+    if (this.registry.setCurrent(id)) {
+      this.conversation.clear(); // 切换提供商时清除历史
+      return true;
+    }
+    return false;
+  }
+
+  /** 切换模型 */
+  switchModel(model: string): void {
+    const provider = this.registry.getCurrent();
+    if (provider) {
+      provider.setDefaultModel(model);
+    }
+  }
+
+  /** 获取当前提供商名称 */
+  getCurrentProviderName(): string {
+    return this.registry.getCurrent()?.name || '未知';
+  }
+
+  /** 获取当前模型名称 */
+  getCurrentModel(): string {
+    return this.registry.getCurrent()?.getDefaultModel() || '未知';
   }
 }

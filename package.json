@@ -1,27 +1,33 @@
 {
-  "name": "claude-agent-bot",
-  "version": "1.0.0",
-  "description": "基于 Claude SDK 的 Agent 项目",
+  "name": "multi-model-ai-bot",
+  "version": "2.0.0",
+  "description": "支持多个大模型接入的智能对话 Bot",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx src/index.ts",
+    "dev:watch": "tsx watch src/index.ts",
     "type-check": "tsc --noEmit"
   },
   "keywords": [
+    "ai",
+    "bot",
+    "llm",
+    "openai",
     "claude",
-    "agent",
     "anthropic",
-    "ai"
+    "deepseek",
+    "qwen",
+    "multi-model"
   ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.2.39",
     "@anthropic-ai/sdk": "^0.24.0",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "openai": "^4.80.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

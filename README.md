@@ -1,20 +1,19 @@
-# Claude Agent 项目
+# 🤖 Multi-Model AI Bot
 
-基于 Anthropic Claude SDK 构建的 AI Agent 项目，支持对话、流式响应和工具调用。
+支持多个大模型接入的智能对话 Bot，基于 TypeScript 开发，提供交互式控制台 REPL。
 
-## 功能特性
+## ✨ 功能特性
 
-- ✅ 基础对话功能
-- ✅ 流式响应支持
-- ✅ 多轮对话历史管理
-- ✅ 工具调用（Tool Use）支持
-- ✅ **多模型支持** - 支持所有 Claude 模型（3.5 Sonnet、3 Opus、3 Sonnet、3 Haiku 等）
-- ✅ **兼容 API 支持** - 支持阿里云百炼、千问等兼容 Claude API 的服务
-- ✅ **自定义 API 端点** - 支持配置自定义 baseURL
-- ✅ TypeScript 类型安全
-- ✅ 模块化设计
+- 🔌 **多提供商支持** - OpenAI、Claude、百炼、DeepSeek、Moonshot、智谱、硅基流动、OpenRouter、Ollama
+- 🔄 **运行时切换** - 随时切换提供商和模型，无需重启
+- 📡 **流式响应** - 实时流式输出，打字机效果
+- 💬 **多轮对话** - 自动管理对话历史
+- 🎨 **彩色控制台** - 美观的终端界面
+- 🔧 **丰富命令** - 内置多个交互命令
+- 🏗️ **模块化设计** - 易于扩展新的提供商
+- 📦 **TypeScript** - 完整的类型安全
 
-## 快速开始
+## 🚀 快速开始
 
 ### 1. 安装依赖
 
@@ -24,245 +23,156 @@ npm install
 
 ### 2. 配置环境变量
 
-复制 `.env.example` 为 `.env` 并填入你的 API Key：
+```bash
+cp env.example.txt .env
+```
+
+在 `.env` 文件中配置你要使用的提供商的 API Key（至少配置一个）：
 
 ```bash
-cp .env.example .env
+# OpenAI
+OPENAI_API_KEY=sk-xxxxx
+
+# Anthropic Claude
+ANTHROPIC_API_KEY=sk-ant-xxxxx
+
+# 阿里云百炼
+DASHSCOPE_API_KEY=sk-xxxxx
+
+# DeepSeek
+DEEPSEEK_API_KEY=sk-xxxxx
+
+# 更多提供商参见 env.example.txt
 ```
 
-在 `.env` 文件中设置：
+### 3. 启动 Bot
 
-```
-# Anthropic 官方 API
-ANTHROPIC_API_KEY=your_api_key_here
-
-# 阿里云百炼 API (可选)
-DASHSCOPE_API_KEY=your_dashscope_key
-
-# 其他兼容 API (可选)
-COMPATIBLE_API_KEY=your_compatible_key
-```
-
-你可以从以下位置获取 API Key：
-- [Anthropic Console](https://console.anthropic.com/) - Anthropic 官方 API
-- [阿里云百炼](https://dashscope.aliyun.com/) - 阿里云百炼平台
-
-### 3. 运行项目
-
-**开发模式（自动重新编译）：**
 ```bash
 npm run dev
 ```
 
-**生产模式：**
-```bash
-npm run build
-npm start
+## 📋 交互命令
+
+启动后在控制台中使用以下命令：
+
+| 命令 | 缩写 | 说明 |
+|------|------|------|
+| `/providers` | `/p` | 列出所有可用提供商 |
+| `/switch <id>` | `/s` | 切换提供商 |
+| `/models` | `/m` | 列出当前提供商可用模型 |
+| `/model <name>` | `/md` | 切换模型 |
+| `/system <prompt>` | - | 设置/查看系统提示词 |
+| `/clear` | `/c` | 清除对话历史 |
+| `/info` | `/i` | 显示当前配置信息 |
+| `/history` | `/h` | 查看对话历史 |
+| `/help` | - | 显示帮助信息 |
+| `/exit` | `/q` | 退出程序 |
+
+## 🔌 支持的提供商
+
+| 提供商 | ID | 默认模型 | API Key 环境变量 |
+|--------|-----|----------|-----------------|
+| OpenAI | `openai` | gpt-4o | `OPENAI_API_KEY` |
+| Anthropic Claude | `anthropic` | claude-sonnet-4-20250514 | `ANTHROPIC_API_KEY` |
+| 阿里云百炼 | `dashscope` | qwen-plus | `DASHSCOPE_API_KEY` |
+| DeepSeek | `deepseek` | deepseek-chat | `DEEPSEEK_API_KEY` |
+| 月之暗面 Kimi | `moonshot` | moonshot-v1-8k | `MOONSHOT_API_KEY` |
+| 智谱 AI | `zhipu` | glm-4-plus | `ZHIPU_API_KEY` |
+| 硅基流动 | `siliconflow` | DeepSeek-V3 | `SILICONFLOW_API_KEY` |
+| OpenRouter | `openrouter` | gpt-4o | `OPENROUTER_API_KEY` |
+| Ollama (本地) | `ollama` | llama3 | `OLLAMA_ENABLED=true` |
+
+## 📁 项目结构
+
+```
+src/
+├── index.ts              # 主入口 - 交互式控制台 REPL
+├── types.ts              # 核心类型定义
+├── agent.ts              # Agent 统一封装（对话管理、提供商切换）
+├── conversation.ts       # 对话历史管理
+└── providers/
+    ├── base.ts           # Provider 抽象基类
+    ├── openai.ts         # OpenAI 兼容 Provider（适用于大部分服务）
+    ├── anthropic.ts      # Anthropic Claude Provider
+    ├── registry.ts       # 提供商注册表
+    └── index.ts          # 统一导出
 ```
 
-## 项目结构
+## 🏗️ 架构设计
 
 ```
-.
-├── src/
-│   ├── index.ts          # 主入口文件，包含基础示例
-│   ├── agent.ts          # 高级 Agent 类
-│   ├── models.ts         # 模型定义和配置
-│   ├── providers.ts      # API 提供商配置（支持兼容 API）
-│   └── examples/
-│       ├── tool-use.ts   # 工具使用示例
-│       ├── model-comparison.ts  # 模型对比示例
-│       └── compatible-api.ts    # 兼容 API 使用示例
-├── dist/                 # 编译输出目录
-├── package.json
-├── tsconfig.json
-├── .env.example
-└── README.md
+┌─────────────────────────────┐
+│       Interactive REPL      │  ← 控制台交互层
+│        (index.ts)           │
+├─────────────────────────────┤
+│          Agent              │  ← 业务逻辑层（对话管理、流式输出）
+│        (agent.ts)           │
+├─────────────────────────────┤
+│     ProviderRegistry        │  ← 提供商管理层
+│      (registry.ts)          │
+├──────────┬──────────────────┤
+│ OpenAI   │   Anthropic      │  ← 具体提供商实现
+│ Provider │   Provider       │
+│          │                  │
+│ (适用于 OpenAI, DashScope,  │
+│  DeepSeek, Moonshot, 智谱,  │
+│  硅基流动, Ollama 等)       │
+└──────────┴──────────────────┘
 ```
 
-## 使用示例
+**核心设计思路：**
 
-### 基础对话
+- **OpenAI 兼容**：大部分国内外大模型服务都兼容 OpenAI 的 Chat Completions API，因此使用一个 `OpenAIProvider` 即可接入大量服务，仅需配置不同的 `baseURL` 和 `apiKey`。
+- **Anthropic 独立**：Claude 使用独有的 Messages API 格式，因此使用专门的 `AnthropicProvider`。
+- **注册表模式**：所有提供商统一注册，支持运行时动态切换。
+
+## 🔧 扩展新提供商
+
+### 方式一：使用 OpenAI 兼容接口（推荐）
+
+大部分提供商都兼容 OpenAI API，只需在 `index.ts` 的 `setupProviders()` 中添加注册代码：
 
 ```typescript
-import { ClaudeAgent } from './src/index.js';
-
-const agent = new ClaudeAgent();
-const response = await agent.sendMessage('你好！');
-console.log(response);
-```
-
-### 选择不同的模型
-
-```typescript
-import { ClaudeAgent } from './src/index.js';
-
-// 方式 1: 创建时指定模型
-const agent = new ClaudeAgent({
-  systemPrompt: '你是一个专业的助手',
-  model: 'claude-3-opus-20240229', // 使用 Claude 3 Opus
-  maxTokens: 4096,
-});
-
-// 方式 2: 运行时切换模型
-agent.setModel('claude-3-haiku-20240307'); // 切换到 Haiku（更快更便宜）
-
-// 方式 3: 单次调用指定模型
-const response = await agent.sendMessage('你好', [], {
-  model: 'claude-3-sonnet-20240229',
-});
-```
-
-### 可用模型列表
-
-项目支持以下 Claude 模型：
-
-- **claude-3-5-sonnet-20241022** (默认) - 最新最强模型
-- **claude-3-opus-20240229** - 最强大的模型，适合复杂任务
-- **claude-3-sonnet-20240229** - 平衡性能和速度
-- **claude-3-haiku-20240307** - 最快最经济的模型
-
-查看 `src/models.ts` 获取完整模型列表和详细信息。
-
-### 流式响应
-
-```typescript
-for await (const chunk of agent.streamMessage('请介绍一下 AI')) {
-  process.stdout.write(chunk);
+if (process.env.YOUR_API_KEY) {
+  registry.register('your-provider', new OpenAIProvider({
+    apiKey: process.env.YOUR_API_KEY,
+    baseURL: 'https://api.your-provider.com/v1',
+    defaultModel: 'your-default-model',
+    name: '你的提供商',
+    id: 'your-provider',
+    models: [
+      { id: 'model-1', name: 'Model 1', description: '描述' },
+    ],
+  }));
 }
 ```
 
-### 工具调用
+### 方式二：实现自定义 Provider
 
-查看 `src/examples/tool-use.ts` 了解如何使用工具调用功能。
-
-### 模型对比
-
-查看 `src/examples/model-comparison.ts` 了解如何对比不同模型的表现。
-
-### 使用兼容 API（阿里云百炼、千问等）
+如果提供商使用独特的 API 格式，可以继承 `BaseProvider`：
 
 ```typescript
-import { ClaudeAgent } from './src/index.js';
+import { BaseProvider } from './providers/base.js';
 
-// 方式 1: 使用预定义的提供商
-const dashscopeAgent = new ClaudeAgent({
-  systemPrompt: '你是一个专业的助手',
-  provider: 'dashscope', // 或 'qianwen'
-  apiKey: process.env.DASHSCOPE_API_KEY,
-  model: 'qwen-plus', // 使用百炼的模型名称
-});
+export class CustomProvider extends BaseProvider {
+  readonly name = 'Custom Provider';
+  readonly id = 'custom';
 
-// 方式 2: 直接指定 baseURL
-const customAgent = new ClaudeAgent({
-  systemPrompt: '你是一个专业的助手',
-  baseURL: 'https://your-compatible-api.com/v1',
-  apiKey: process.env.COMPATIBLE_API_KEY,
-  model: 'your-model-name',
-});
-
-// 方式 3: 使用自定义提供商配置
-import { createCustomProvider } from './src/providers.js';
-
-const customProvider = createCustomProvider(
-  '我的服务',
-  'https://api.example.com/v1',
-  {
-    apiKeyHeader: 'Authorization',
-    apiKeyFormat: 'bearer',
-  }
-);
-
-const agent = new ClaudeAgent({
-  provider: customProvider,
-  apiKey: process.env.CUSTOM_API_KEY,
-  model: 'custom-model',
-});
+  async sendMessage(messages, systemPrompt, options) { /* ... */ }
+  async *streamMessage(messages, systemPrompt, options) { /* ... */ }
+  getModels() { return []; }
+}
 ```
 
-查看 `src/examples/compatible-api.ts` 了解完整的兼容 API 使用示例。
+## 📜 依赖
 
-## API 文档
-
-### ClaudeAgent
-
-基础 Agent 类，提供简单的对话功能。
-
-#### 方法
-
-- `sendMessage(message: string, conversationHistory?: MessageParam[], options?: { model?, maxTokens?, temperature? }): Promise<string>`
-  - 发送消息并获取响应，支持单次调用指定模型
-
-- `streamMessage(message: string, conversationHistory?: MessageParam[], options?: { model?, maxTokens?, temperature? }): AsyncGenerator<string>`
-  - 流式发送消息并获取响应，支持单次调用指定模型
-
-- `setSystemPrompt(prompt: string): void`
-  - 设置系统提示词
-
-- `setModel(model: ClaudeModelName): void`
-  - 设置使用的模型
-
-- `getModel(): ClaudeModelName`
-  - 获取当前使用的模型
-
-- `setMaxTokens(maxTokens: number): void`
-  - 设置最大 token 数
-
-- `setTemperature(temperature: number): void`
-  - 设置温度参数（控制随机性）
-
-- `getBaseURL(): string | undefined`
-  - 获取当前使用的 API 端点
-
-#### 构造函数选项
-
-- `apiKey?: string` - 自定义 API Key（默认使用环境变量）
-- `baseURL?: string` - 自定义 API 端点
-- `provider?: string | ProviderConfig` - 提供商 ID 或自定义配置
-
-### 支持的提供商
-
-项目预定义了以下提供商：
-
-- **anthropic** - Anthropic 官方 API（默认）
-- **dashscope** - 阿里云百炼平台
-- **qianwen** - 阿里云通义千问
-
-你也可以使用 `createCustomProvider()` 创建自定义提供商配置。
-
-### AdvancedClaudeAgent
-
-高级 Agent 类，支持工具调用和更灵活的配置。
-
-#### 方法
-
-- `sendMessage(message: string, options?: Options): Promise<Message>`
-  - 发送消息，支持工具调用
-
-- `streamMessage(message: string, options?: Options): AsyncGenerator<MessageStreamEvent>`
-  - 流式发送消息
-
-- `clearHistory(): void`
-  - 清除对话历史
-
-- `getHistory(): MessageParam[]`
-  - 获取对话历史
-
-- `setSystemPrompt(prompt: string): void`
-  - 设置系统提示词
-
-## 依赖
-
-- `@anthropic-ai/sdk`: Anthropic 官方 SDK
-- `dotenv`: 环境变量管理
-- `typescript`: TypeScript 支持
-- `tsx`: TypeScript 执行工具
+| 包名 | 用途 |
+|------|------|
+| `openai` | OpenAI 及兼容 API 的 SDK |
+| `@anthropic-ai/sdk` | Anthropic Claude SDK |
+| `dotenv` | 环境变量管理 |
+| `tsx` | TypeScript 运行/热重载 |
 
 ## 许可证
 
 MIT
-
-## 参考资源
-
-- [Anthropic Claude API 文档](https://docs.anthropic.com/)
-- [Claude SDK GitHub](https://github.com/anthropics/anthropic-sdk-typescript)
